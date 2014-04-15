@@ -70,6 +70,7 @@ def get_ec2id_from_opsid(opsid):
 #    timeout = time.time() + 120		# 120 seconds from now
     timeout = time.time() + 10		# 10 seconds from now
 
+    ec2id = None
     while True:
         # check timeout
         if time.time() > timeout:
@@ -94,15 +95,15 @@ def get_ec2id_from_opsid(opsid):
 
 
 # create a VPC
-vpc = vpc_conn.create_vpc('10.27.0.0/16')
+vpc = vpc_conn.create_vpc('10.28.0.0/16')
 set_name(vpc, "TestVPC")
 
 # create subnets
-subnet_a_pub = create_subnet(vpc.id, "10.27.0.0/24", 'ap-northeast-1a', "TestVPC public segment A")
+subnet_a_pub = create_subnet(vpc.id, "10.28.0.0/24", 'ap-northeast-1a', "TestVPC public segment A")
 rtb_main = vpc_conn.get_all_route_tables(filters=(("vpc-id", vpc.id),))[0]	# get main route table
-subnet_a_pvt = create_subnet(vpc.id, "10.27.128.0/24", 'ap-northeast-1a', "TestVPC private segment A")
-subnet_b_pub = create_subnet(vpc.id, "10.27.1.0/24", 'ap-northeast-1c', "TestVPC public segment B")
-subnet_b_pvt = create_subnet(vpc.id, "10.27.129.0/24", 'ap-northeast-1c', "TestVPC private segment B")
+subnet_a_pvt = create_subnet(vpc.id, "10.28.128.0/24", 'ap-northeast-1a', "TestVPC private segment A")
+subnet_b_pub = create_subnet(vpc.id, "10.28.1.0/24", 'ap-northeast-1c', "TestVPC public segment B")
+subnet_b_pvt = create_subnet(vpc.id, "10.28.129.0/24", 'ap-northeast-1c', "TestVPC private segment B")
 # get or create route tables
 rtb_a_pub = rtb_main
 vpc_conn.associate_route_table(rtb_a_pub.id, subnet_a_pub.id)			# set main route table
