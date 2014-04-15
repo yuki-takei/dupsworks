@@ -63,12 +63,48 @@ def setup_internet_gateway(rtbs, name=""):
         vpc_conn.create_route(rtb.id, "0.0.0.0/0", gateway_id=igw.id)
         vpc_conn.create_route(rtb.id, "0.0.0.0/0", gateway_id=igw.id)
 
+def check_security_groups_created():
+    timeout = time.time() + 20		# 20 seconds from now
+
+    necessary_names = ["AWS-OpsWorks-Custom-Server", "AWS-OpsWorks-Default-Server"]
+
+    is_valid = False
+    while True:
+        # check timeout
+        if time.time() > timeout:
+            break
+
+        # get all security groups
+        sgs = ec2_conn.get_all_security_groups(filters={"vpc-id": vpc.id})
+        # create name list
+        sg_names = []
+        for sg in sgs:
+            sg_names.append(sg.name)
+
+        # set True temporary
+        is_valid = True
+        # check whethere necessary security groups are contained
+        for name in necessary_names:
+            if name not in sg_names:
+                is_valid = False
+                break
+
+        # continue or break
+        if is_valid == False:
+            time.sleep(1)		# sleep 1 second
+            continue
+        else:
+            break
+
+    if is_valid == False:
+        raise Exception("couldn't confirm necessary security groups while at least 20 seconds.")
+
+
 
 def get_ec2id_from_opsid(opsid):
     print("retrieving EC2 Instance ID... (this might take several minutes)")
 
-#    timeout = time.time() + 120		# 120 seconds from now
-    timeout = time.time() + 10		# 10 seconds from now
+    timeout = time.time() + 20		# 20 seconds from now
 
     ec2id = None
     while True:
@@ -88,22 +124,22 @@ def get_ec2id_from_opsid(opsid):
     if ec2id == None:
         raise Exception("couldn't retrieve EC2 Instance ID from OpsWorks Instance ID : " + opsid)
 
-    print("retrieved. EC2 Instance ID is : " + instance_ec2id_nat_a)
+    print("retrieved. EC2 Instance ID is : " + ec2id)
     return ec2id
 
 
 
 
 # create a VPC
-vpc = vpc_conn.create_vpc('10.28.0.0/16')
+vpc = vpc_conn.create_vpc('10.24.0.0/16')
 set_name(vpc, "TestVPC")
 
 # create subnets
-subnet_a_pub = create_subnet(vpc.id, "10.28.0.0/24", 'ap-northeast-1a', "TestVPC public segment A")
+subnet_a_pub = create_subnet(vpc.id, "10.24.0.0/24", 'ap-northeast-1a', "TestVPC public segment A")
 rtb_main = vpc_conn.get_all_route_tables(filters=(("vpc-id", vpc.id),))[0]	# get main route table
-subnet_a_pvt = create_subnet(vpc.id, "10.28.128.0/24", 'ap-northeast-1a', "TestVPC private segment A")
-subnet_b_pub = create_subnet(vpc.id, "10.28.1.0/24", 'ap-northeast-1c', "TestVPC public segment B")
-subnet_b_pvt = create_subnet(vpc.id, "10.28.129.0/24", 'ap-northeast-1c', "TestVPC private segment B")
+subnet_a_pvt = create_subnet(vpc.id, "10.24.128.0/24", 'ap-northeast-1a', "TestVPC private segment A")
+subnet_b_pub = create_subnet(vpc.id, "10.24.1.0/24", 'ap-northeast-1c', "TestVPC public segment B")
+subnet_b_pvt = create_subnet(vpc.id, "10.24.129.0/24", 'ap-northeast-1c', "TestVPC private segment B")
 # get or create route tables
 rtb_a_pub = rtb_main
 vpc_conn.associate_route_table(rtb_a_pub.id, subnet_a_pub.id)			# set main route table
@@ -166,6 +202,14 @@ print("nat instances has been created : " + instance_opsid_nat_a + ", " + instan
 
 
 
+# check stack
+print("checking security groups has been created...")
+try:
+    check_security_groups_created()
+except Exception as e:
+    print "[WARN] " + e.message
+
+
 # start nat_a instances and retrieve EC2 ID
 print("starting instance : " + instance_opsid_nat_a)
 ow_conn.start_instance(instance_opsid_nat_a)
@@ -179,11 +223,11 @@ instance_ec2id_nat_b = get_ec2id_from_opsid(instance_opsid_nat_b)
 
 
 # create route for private segments
-vpn_conn.create_route(rtb_a_pvt, "0.0.0.0/0", instance_id=instance_ec2id_nat_a)
-vpn_conn.create_route(rtb_b_pvt, "0.0.0.0/0", instance_id=instance_ec2id_nat_b)
+vpc_conn.create_route(rtb_a_pvt, "0.0.0.0/0", instance_id=instance_ec2id_nat_a)
+vpc_conn.create_route(rtb_b_pvt, "0.0.0.0/0", instance_id=instance_ec2id_nat_b)
 # create route for heartbeat checking
-vpn_conn.create_route(rtb_a_pub, "8.8.4.4/32", instance_id=instance_ec2id_nat_b)
-vpn_conn.create_route(rtb_b_pub, "8.8.8.8/32", instance_id=instance_ec2id_nat_a)
+vpc_conn.create_route(rtb_a_pub, "8.8.4.4/32", instance_id=instance_ec2id_nat_b)
+vpc_conn.create_route(rtb_b_pub, "8.8.8.8/32", instance_id=instance_ec2id_nat_a)
 
 
 # create and set Custom Json
