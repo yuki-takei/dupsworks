@@ -183,27 +183,27 @@ subprocess.check_output("aws --region us-east-1 \
 # create layers
 result = ow_conn.create_layer(stack_id, 'custom', 'Admin Server', 'admin', auto_assign_elastic_ips=True, custom_recipes={"Setup": ["timezone"]})
 layer_id_admin = result["LayerId"]
-print("'Admin Server' layer has been created : " + layer_id_admin)
+print("OpsWorks Layer 'Admin Server' has been created : " + layer_id_admin)
 result = ow_conn.create_layer(stack_id, 'custom', 'NAT Server', 'nat', auto_assign_public_ips=True, custom_recipes={"Setup": ["timezone", "vpcnat::disable-source-dest-check", "vpcnat::setup-heartbeat-script"]})
 layer_id_nat = result["LayerId"]
-print("'NAT Server' layer has been created : " + layer_id_nat)
+print("OpsWorks Layer 'NAT Server' has been created : " + layer_id_nat)
 
 # create an admin instance
 result = ow_conn.create_instance(stack_id, [layer_id_admin], 't1.micro', subnet_id=subnet_a_pub.id)
 instance_opsid_admin = result["InstanceId"]
-print("an admin instance has been created : " + instance_opsid_admin)
+print("1 admin instance has been created : " + instance_opsid_admin)
 
 # create nat instances
 result = ow_conn.create_instance(stack_id, [layer_id_nat], 't1.micro', subnet_id=subnet_a_pub.id)
 instance_opsid_nat_a = result["InstanceId"]
 result = ow_conn.create_instance(stack_id, [layer_id_nat], 't1.micro', subnet_id=subnet_b_pub.id)
 instance_opsid_nat_b = result["InstanceId"]
-print("nat instances has been created : " + instance_opsid_nat_a + ", " + instance_opsid_nat_b)
+print("2 nat instances has been created : " + instance_opsid_nat_a + ", " + instance_opsid_nat_b)
 
 
 
 # check stack
-print("checking security groups has been created...")
+print("checking whethere security groups had been created...")
 try:
     check_security_groups_created()
 except Exception as e:
