@@ -252,8 +252,12 @@ json_obj = {
     }
 }
 json_str = json.dumps(json_obj, sort_keys=True, indent=4)
-print json_str
 ow_conn.update_stack(stack_id, custom_json=json_str)
+
+print("installed custom_json to Stack : " + json_str)
+
+
+
 
 
 # TODO print summary messages
