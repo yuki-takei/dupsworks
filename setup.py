@@ -85,7 +85,7 @@ def get_ec2id_from_opsid(opsid):
         time.sleep(1)		# sleep 1 second
 
     if ec2id == None:
-        raise Exception("couldn't retrieve EC2 Instance ID from OpsWorks Instance ID : " + opsid
+        raise Exception("couldn't retrieve EC2 Instance ID from OpsWorks Instance ID : " + opsid)
 
     print("retrieved. EC2 Instance ID is : " + instance_ec2id_nat_a)
     return ec2id
