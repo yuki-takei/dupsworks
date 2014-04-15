@@ -15,8 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import uuid
+import subprocess
 
 # Import the SDK
 import boto, boto.ec2, boto.opsworks
@@ -29,6 +29,7 @@ from boto.opsworks.layer1 import OpsWorksConnection
 ec2region = boto.ec2.get_region("ap-northeast-1")
 ec2_conn = boto.ec2.connect_to_region("ap-northeast-1")
 vpc_conn = boto.vpc.VPCConnection(region=ec2region)
+ow_conn = boto.opsworks.layer1.OpsWorksConnection()
 
 
 def set_name(resource, name):
@@ -61,11 +62,6 @@ def setup_internet_gateway(rtbs, name=""):
         vpc_conn.create_route(rtb.id, "0.0.0.0/0", gateway_id=igw.id)
         vpc_conn.create_route(rtb.id, "0.0.0.0/0", gateway_id=igw.id)
 
-#s3 = boto.opsworks.connect_to_region('us-east-1')
-
-#print boto.opsworks.regions()
-
-
 
 
 
@@ -92,15 +88,59 @@ setup_internet_gateway([rtb_a_pub, rtb_b_pub], "TestVPC Internet Gateway")
 print("VPC has been created : " + vpc.id)
 
 
-# create OpsWorksConnection
-ow_conn = boto.opsworks.layer1.OpsWorksConnection()
+
+
 # create a Stack
-result = ow_conn.create_stack('Test', 'ap-northeast-1', 'arn:aws:iam::259692501178:role/aws-opsworks-service-role', 'arn:aws:iam::259692501178:instance-profile/aws-opsworks-ec2-role', vpc.id, default_subnet_id=subnet_a_pvt.id)
+result = ow_conn.create_stack('Test', 'ap-northeast-1',
+    'arn:aws:iam::259692501178:role/aws-opsworks-service-role',
+    'arn:aws:iam::259692501178:instance-profile/aws-opsworks-ec2-role',
+    vpc.id, default_subnet_id=subnet_a_pvt.id,
+    default_root_device_type="ebs",
+    use_custom_cookbooks=True,
+    custom_cookbooks_source={
+        "Type": "git",
+        "Url": "https://github.com/yuki-takei/dupsworks-tmplate-cc.git"
+    })
 stack_id = result["StackId"]
 
 print "OpsWorks Stack has been created : " + stack_id
 
-# TODO create nat instances
+
+
+
+# Chef settings
+# !! using awscli because boto(at least 2.27.0) doesn't support the "chef-configuration" argument !!
+subprocess.check_output("aws --region us-east-1 \
+    opsworks update-stack --stack-id %s \
+        --configuration-manager Name=Chef,Version=11.10 \
+        --chef-configuration ManageBerkshelf=true,BerkshelfVersion=2.0.14" % stack_id,
+    shell=True)
+
+
+
+
+# create layers
+result = ow_conn.create_layer(stack_id, 'custom', 'Admin Server', 'admin', auto_assign_elastic_ips=True, custom_recipes={"Setup": ["timezone"]})
+layer_id_admin = result["LayerId"]
+print("'Admin Server' layer has been created : " + layer_id_admin)
+result = ow_conn.create_layer(stack_id, 'custom', 'NAT Server', 'nat', auto_assign_public_ips=True, custom_recipes={"Setup": ["timezone", "vpcnat::disable-source-dest-check", "vpcnat::setup-heartbeat-script"]})
+layer_id_nat = result["LayerId"]
+print("'NAT Server' layer has been created : " + layer_id_nat)
+
+# create an admin instance
+result = ow_conn.create_instance(stack_id, [layer_id_admin], 't1.micro', subnet_id=subnet_a_pub.id)
+instance_id_admin = result["InstanceId"]
+print("an admin instance has been created : " + instance_id_admin)
+
+# create nat instances
+result = ow_conn.create_instance(stack_id, [layer_id_nat], 't1.micro', subnet_id=subnet_a_pub.id)
+instance_id_nat1 = result["InstanceId"]
+result = ow_conn.create_instance(stack_id, [layer_id_nat], 't1.micro', subnet_id=subnet_b_pub.id)
+instance_id_nat2 = result["InstanceId"]
+print("nat instances has been created : " + instance_id_nat1 + ", " + instance_id_nat2)
+
+
+
 
 # TODO setup route tables
 
