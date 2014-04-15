@@ -15,7 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uuid
+import json
+import time
 import subprocess
 
 # Import the SDK
@@ -62,14 +63,36 @@ def setup_internet_gateway(rtbs, name=""):
         vpc_conn.create_route(rtb.id, "0.0.0.0/0", gateway_id=igw.id)
         vpc_conn.create_route(rtb.id, "0.0.0.0/0", gateway_id=igw.id)
 
-#s3 = boto.opsworks.connect_to_region('us-east-1')
 
-#print boto.opsworks.regions()
+def get_ec2id_from_opsid(opsid):
+    print("retrieving EC2 Instance ID... (this might take several minutes)")
+
+#    timeout = time.time() + 120		# 120 seconds from now
+    timeout = time.time() + 10		# 10 seconds from now
+
+    while True:
+        # check timeout
+        if time.time() > timeout:
+            break
+    
+        # describe
+        result = ow_conn.describe_instances(instance_ids=[opsid])
+        instance_info = result["Instances"][0]
+        if "Ec2InstanceId" in instance_info:
+            ec2id = instance_info["Ec2InstanceId"]
+            break
+
+        time.sleep(1)		# sleep 1 second
+
+    if ec2id == None:
+        raise Exception("couldn't retrieve EC2 Instance ID from OpsWorks Instance ID : " + opsid
+
+    print("retrieved. EC2 Instance ID is : " + instance_ec2id_nat_a)
+    return ec2id
 
 
 
 
-'''
 # create a VPC
 vpc = vpc_conn.create_vpc('10.27.0.0/16')
 set_name(vpc, "TestVPC")
@@ -91,16 +114,15 @@ rtb_b_pvt = create_and_associate_route_table(subnet_b_pvt, "TestVPC private segm
 setup_internet_gateway([rtb_a_pub, rtb_b_pub], "TestVPC Internet Gateway")
 
 print("VPC has been created : " + vpc.id)
-'''
 
 
-'''
+
+
 # create a Stack
 result = ow_conn.create_stack('Test', 'ap-northeast-1',
     'arn:aws:iam::259692501178:role/aws-opsworks-service-role',
     'arn:aws:iam::259692501178:instance-profile/aws-opsworks-ec2-role',
     vpc.id, default_subnet_id=subnet_a_pvt.id,
-#    "vpc-a4e6fec6", default_subnet_id="subnet-8fd6dffb",
     default_root_device_type="ebs",
     use_custom_cookbooks=True,
     custom_cookbooks_source={
@@ -110,11 +132,7 @@ result = ow_conn.create_stack('Test', 'ap-northeast-1',
 stack_id = result["StackId"]
 
 print "OpsWorks Stack has been created : " + stack_id
-'''
 
-stack_id = '95c17062-c388-41b2-81b5-d31cc33e1c4d'
-
-'''
 # Chef settings
 # !! using awscli because boto(at least 2.27.0) doesn't support the "chef-configuration" argument !!
 subprocess.check_output("aws --region us-east-1 \
@@ -122,10 +140,9 @@ subprocess.check_output("aws --region us-east-1 \
         --configuration-manager Name=Chef,Version=11.10 \
         --chef-configuration ManageBerkshelf=true,BerkshelfVersion=2.0.14" % stack_id,
     shell=True)
-'''
 
 
-'''
+
 # create layers
 result = ow_conn.create_layer(stack_id, 'custom', 'Admin Server', 'admin', auto_assign_elastic_ips=True, custom_recipes={"Setup": ["timezone"]})
 layer_id_admin = result["LayerId"]
@@ -145,28 +162,53 @@ instance_opsid_nat_a = result["InstanceId"]
 result = ow_conn.create_instance(stack_id, [layer_id_nat], 't1.micro', subnet_id=subnet_b_pub.id)
 instance_opsid_nat_b = result["InstanceId"]
 print("nat instances has been created : " + instance_opsid_nat_a + ", " + instance_opsid_nat_b)
-'''
 
-# TODO start nat instances
-# TODO wait for creating instance
 
-result = ow_conn.describe_instances(instance_ids=[instance_opsid_nat_a])
-instance_ec2id_nat_a = result["Instances"][0]["Ec2InstanceId"]
-result = ow_conn.describe_instances(instance_ids=[instance_opsid_nat_b])
-instance_ec2id_nat_b = result["Instances"][0]["Ec2InstanceId"]
+
+# start nat_a instances and retrieve EC2 ID
+print("starting instance : " + instance_opsid_nat_a)
+ow_conn.start_instance(instance_opsid_nat_a)
+instance_ec2id_nat_a = get_ec2id_from_opsid(instance_opsid_nat_a)
+
+
+# start nat_a instances and retrieve EC2 ID
+print("starting instance : " + instance_opsid_nat_b)
+ow_conn.start_instance(instance_opsid_nat_b)
+instance_ec2id_nat_b = get_ec2id_from_opsid(instance_opsid_nat_b)
 
 
 # create route for private segments
 vpn_conn.create_route(rtb_a_pvt, "0.0.0.0/0", instance_id=instance_ec2id_nat_a)
 vpn_conn.create_route(rtb_b_pvt, "0.0.0.0/0", instance_id=instance_ec2id_nat_b)
 # create route for heartbeat checking
-vpn_conn.create_route(rtb_a_pub, "8.8.8.8/32", instance_id=instance_ec2id_nat_b)
-vpn_conn.create_route(rtb_b_pub, "8.8.4.4/32", instance_id=instance_ec2id_nat_a)
+vpn_conn.create_route(rtb_a_pub, "8.8.4.4/32", instance_id=instance_ec2id_nat_b)
+vpn_conn.create_route(rtb_b_pub, "8.8.8.8/32", instance_id=instance_ec2id_nat_a)
 
 
 # create and set Custom Json
-
-
+json_obj = {
+    "vpcnat": {
+        "az": {
+            "ap-northeast-1a": {
+                "target_via_checking_nat": "8.8.4.4",
+                "target_via_inetgw": "google.co.jp",
+                "opposit_primary_nat_id": instance_ec2id_nat_b,
+                "opposit_rtb": rtb_b_pvt.id,
+                "enabled": 1
+            },
+            "ap-northeast-1c": {
+                "target_via_checking_nat": "8.8.8.8",
+                "target_via_inetgw": "google.co.jp",
+                "opposit_primary_nat_id": instance_ec2id_nat_a,
+                "opposit_rtb": rtb_a_pvt.id,
+                "enabled": 1
+            }
+        }
+    }
+}
+json_str = json.dumps(json_obj, sort_keys=True, indent=4)
+print json_str
+ow_conn.update_stack(stack_id, custom_json=json_str)
 
 
 # TODO print summary messages
