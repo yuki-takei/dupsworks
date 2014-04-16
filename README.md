@@ -1,7 +1,8 @@
-# AWS SDK for Python Sample Project
+dupsworks
+=========
 
-A simple Python application illustrating usage of the AWS SDK for Python (also
-referred to as Boto).
+Scripts which build an OpsWorks Stack with HA-NAT Layer
+
 
 ## Requirements
 
