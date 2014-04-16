@@ -64,9 +64,10 @@ def setup_internet_gateway(rtbs, name=""):
         vpc_conn.create_route(rtb.id, "0.0.0.0/0", gateway_id=igw.id)
 
 def check_security_groups_created():
-    timeout = time.time() + 20		# 20 seconds from now
+    timeout = time.time() + cfg_opt["ec2_timeout_check_sg"]		# now + several seconds
 
-    necessary_names = ["AWS-OpsWorks-Custom-Server", "AWS-OpsWorks-Default-Server"]
+    # get security groups name list like ["AWS-OpsWorks-Custom-Server", "AWS-OpsWorks-Default-Server"]
+    necessary_names = cfg["OpsWorks"]["necessary_security_groups"]
 
     is_valid = False
     while True:
@@ -104,7 +105,7 @@ def check_security_groups_created():
 def get_ec2id_from_opsid(opsid):
     print("retrieving EC2 Instance ID... (this might take several minutes)")
 
-    timeout = time.time() + 20		# 20 seconds from now
+    timeout = time.time() + cfg_opt["ec2_timeout_retrieve_id"]		# now + several seconds later
 
     ec2id = None
     while True:
@@ -131,15 +132,19 @@ def get_ec2id_from_opsid(opsid):
 
 
 # create a VPC
-vpc = vpc_conn.create_vpc('10.24.0.0/16')
-set_name(vpc, "TestVPC")
+vpc = vpc_conn.create_vpc(cfg_psn["vpc_cidr"])
+set_name(vpc, cfg_psn["vpc_name"])
 
 # create subnets
-subnet_a_pub = create_subnet(vpc.id, "10.24.0.0/24", 'ap-northeast-1a', "TestVPC public segment A")
+subnet_a_pub = create_subnet(vpc.id, cfg_psn["vpc_subnetA_public_cidr"], cfg_psn["vpc_subnetA_az"],
+    cfg["VPC"]["vpc_subnet_name_template"] % {"vpc_name": cfg_psn["vpc_name"], "layer": "public", "group": "A"})
 rtb_main = vpc_conn.get_all_route_tables(filters=(("vpc-id", vpc.id),))[0]	# get main route table
-subnet_a_pvt = create_subnet(vpc.id, "10.24.128.0/24", 'ap-northeast-1a', "TestVPC private segment A")
-subnet_b_pub = create_subnet(vpc.id, "10.24.1.0/24", 'ap-northeast-1c', "TestVPC public segment B")
-subnet_b_pvt = create_subnet(vpc.id, "10.24.129.0/24", 'ap-northeast-1c', "TestVPC private segment B")
+subnet_a_pvt = create_subnet(vpc.id, cfg_psn["vpc_subnetA_private_cidr"], cfg_psn["vpc_subnetA_az"],
+    cfg["VPC"]["vpc_subnet_name_template"] % {"vpc_name": cfg_psn["vpc_name"], "layer": "private", "group": "B"})
+subnet_b_pub = create_subnet(vpc.id, cfg_psn["vpc_subnetA_public_cidr"], cfg_psn["vpc_subnetB_az"],
+    cfg["VPC"]["vpc_subnet_name_template"] % {"vpc_name": cfg_psn["vpc_name"], "layer": "public", "group": "A"})
+subnet_b_pvt = create_subnet(vpc.id, cfg_psn["vpc_subnetA_private_cidr"], cfg_psn["vpc_subnetB_az"],
+    cfg["VPC"]["vpc_subnet_name_template"] % {"vpc_name": cfg_psn["vpc_name"], "layer": "private", "group": "B"})
 # get or create route tables
 rtb_a_pub = rtb_main
 vpc_conn.associate_route_table(rtb_a_pub.id, subnet_a_pub.id)			# set main route table
@@ -210,15 +215,13 @@ except Exception as e:
     print "[WARN] " + e.message
 
 
-# start nat_a instances and retrieve EC2 ID
+# start nat instanceses and retrieve EC2 ID
 print("starting instance : " + instance_opsid_nat_a)
 ow_conn.start_instance(instance_opsid_nat_a)
-instance_ec2id_nat_a = get_ec2id_from_opsid(instance_opsid_nat_a)
-
-
-# start nat_a instances and retrieve EC2 ID
 print("starting instance : " + instance_opsid_nat_b)
 ow_conn.start_instance(instance_opsid_nat_b)
+sleep(cfg_opt["ops_instance_start_delay"])	# sleep a few seconds
+instance_ec2id_nat_a = get_ec2id_from_opsid(instance_opsid_nat_a)
 instance_ec2id_nat_b = get_ec2id_from_opsid(instance_opsid_nat_b)
 
 
