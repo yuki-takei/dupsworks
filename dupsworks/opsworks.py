@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import time
+
 from boto.opsworks.layer1 import OpsWorksConnection
+
 
 ctx = None
 cfg = None
@@ -29,7 +32,9 @@ def get_ec2id_from_opsid(opsid):
 
     print("retrieving EC2 Instance ID... (this might take several minutes)")
 
-    timeout = time.time() + ctx.cfg_o["ec2_timeout_retrieve_id"]          # now + several seconds later
+    # now + several seconds later
+    span = ctx.parser.getfloat("OptionalSettings", "ec2_timeout_retrieve_id")
+    timeout = time.time() + span
 
     ec2id = None
     while True:

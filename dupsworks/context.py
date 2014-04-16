@@ -9,6 +9,8 @@ class Context:
     cfg_p = None
     cfg_o = None
 
+    vpc = None
+
     def __init__(self, parser):
         self.parser = parser
         self.cfg = parser._sections

@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import time
 import boto.ec2
+
+
 
 ctx = None
 cfg = None
@@ -29,10 +32,12 @@ def check_security_groups_created():
     global ctx, cfg, cfg_p, cfg_o
     global conn
 
-    timeout = time.time() + ctx.cfg_opt["ec2_timeout_check_sg"]             # now + several seconds
+    # now + several seconds
+    span = ctx.parser.getfloat("OptionalSettings", "ec2_timeout_check_sg")
+    timeout = time.time() + span
 
     # get security groups name list like ["AWS-OpsWorks-Custom-Server", "AWS-OpsWorks-Default-Server"]
-    necessary_names = ctx.cfg["OpsWorks"]["necessary_security_groups"]
+    necessary_names = cfg["OpsWorks"]["necessary_security_groups"]
 
     is_valid = False
     while True:

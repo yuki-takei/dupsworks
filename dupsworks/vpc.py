@@ -13,7 +13,7 @@ cfg_p = None
 cfg_o = None
 
 conn = None
-
+vpc = None
 
 def init(context, connection):
     global ctx, cfg, cfg_p, cfg_o
@@ -27,9 +27,10 @@ def init(context, connection):
     conn = connection
 
 def create_subnet(cidr_block, availability_zone, name=""):
-    global conn, vpc
+    global ctx
+    global conn
 
-    subnet = conn.create_subnet(vpc.id, cidr_block, availability_zone)
+    subnet = conn.create_subnet(ctx.vpc.id, cidr_block, availability_zone)
     dupsworks.ec2.set_name(subnet, name)
     return subnet
 
