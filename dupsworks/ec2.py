@@ -25,3 +25,43 @@ def set_name(resource, name):
     global conn
     conn.create_tags([resource.id], {"Name": name})
 
+def check_security_groups_created():
+    global ctx, cfg, cfg_p, cfg_o
+    global conn
+
+    timeout = time.time() + ctx.cfg_opt["ec2_timeout_check_sg"]             # now + several seconds
+
+    # get security groups name list like ["AWS-OpsWorks-Custom-Server", "AWS-OpsWorks-Default-Server"]
+    necessary_names = ctx.cfg["OpsWorks"]["necessary_security_groups"]
+
+    is_valid = False
+    while True:
+        # check timeout
+        if time.time() > timeout:
+            break
+
+        # get all security groups
+        sgs = conn.get_all_security_groups(filters={"vpc-id": ctx.vpc.id})
+        # create name list
+        sg_names = []
+        for sg in sgs:
+            sg_names.append(sg.name)
+
+        # set True temporary
+        is_valid = True
+        # check whethere necessary security groups are contained
+        for name in necessary_names:
+            if name not in sg_names:
+                is_valid = False
+                break
+
+        # continue or break
+        if is_valid == False:
+            time.sleep(1)               # sleep 1 second
+            continue
+        else:
+            break
+
+    if is_valid == False:
+        raise Exception("couldn't confirm necessary security groups while at least 20 seconds.")
+
