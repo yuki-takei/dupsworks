@@ -23,11 +23,6 @@ def init(context):
     conn = boto.opsworks.layer1.OpsWorkConnection()
 
 
-def set_name(resource, name):
-    global conn
-    conn.create_tags([resource.id], {"Name": name})
-
-
 def get_ec2id_from_opsid(opsid):
     global ctx, cfg, cfg_p, cfg_o
     global conn
