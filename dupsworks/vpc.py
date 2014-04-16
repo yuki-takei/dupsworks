@@ -15,7 +15,7 @@ cfg_o = None
 conn = None
 
 
-def init(context):
+def init(context, connection):
     global ctx, cfg, cfg_p, cfg_o
     global conn
 
@@ -24,9 +24,7 @@ def init(context):
     cfg_p = ctx.cfg_p
     cfg_o = ctx.cfg_o
 
-    # create connection
-    ec2region = boto.ec2.get_region(cfg_p["region"])
-    conn = boto.vpc.VPCConnection(region=ec2region)
+    conn = connection
 
 def create_subnet(cidr_block, availability_zone, name=""):
     global conn, vpc

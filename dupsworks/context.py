@@ -9,8 +9,8 @@ class Context:
     cfg_p = None
     cfg_o = None
 
-    def __init__(self, cfg_parser):
-        self.parser = cfg_parser
-        self.cfg = self.parser._sections
+    def __init__(self, parser):
+        self.parser = parser
+        self.cfg = parser._sections
         self.cfg_p = self.cfg["PersonalSettings"]
         self.cfg_o = self.cfg["OptionalSettings"]

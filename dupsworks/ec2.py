@@ -10,7 +10,7 @@ cfg_o = None
 
 conn = None
 
-def init(context):
+def init(context, connection):
     global ctx, cfg, cfg_p, cfg_o
     global conn
 
@@ -19,7 +19,7 @@ def init(context):
     cfg_p = ctx.cfg_p
     cfg_o = ctx.cfg_o
 
-    conn = boto.ec2.connect_to_region(cfg_p["region"])
+    conn = connection
 
 def set_name(resource, name):
     global conn
