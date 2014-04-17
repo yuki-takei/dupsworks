@@ -29,7 +29,7 @@ def get_ec2id_from_opsid(opsid):
 
     print("retrieving EC2 Instance ID... (this might take several minutes)")
 
-    timeout = time.time() + ctx.cfg_o["ec2_timeout_retrieve_id"]          # now + several seconds later
+    timeout = time.time() + ctx.cfg_o["ec2_timeout_retrieve_id"]		# now + several seconds later
 
     ec2id = None
     while True:
