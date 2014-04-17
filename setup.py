@@ -92,7 +92,7 @@ def main():
     
     # get or create route tables
     rtb_a_pub = rtb_main
-    vpc_conn.associate_route_table(rtb_a_pub.id, subnet_a_pub.id)           # set main route table
+    vpc_conn.associate_route_table(rtb_a_pub.id, subnet_a_pub.id)		# set main route table
     dupsworks.ec2.set_name(rtb_a_pub, "TestVPC public segment A")
     
     rtb_a_pvt = dupsworks.vpc.create_and_associate_route_table(subnet_a_pvt, "TestVPC private segment A")
@@ -181,11 +181,11 @@ def main():
 
 
     # create route for private segments
-    vpc_conn.create_route(rtb_a_pvt, "0.0.0.0/0", instance_id=instance_ec2id_nat_a)
-    vpc_conn.create_route(rtb_b_pvt, "0.0.0.0/0", instance_id=instance_ec2id_nat_b)
+    dupsworks.vpc.create_route_to_nat(rtb_a_pvt, "0.0.0.0/0", instance_ec2id_nat_a)
+    dupsworks.vpc.create_route_to_nat(rtb_b_pvt, "0.0.0.0/0",instance_ec2id_nat_b)
     # create route for heartbeat checking
-    vpc_conn.create_route(rtb_a_pub, "8.8.4.4/32", instance_id=instance_ec2id_nat_b)
-    vpc_conn.create_route(rtb_b_pub, "8.8.8.8/32", instance_id=instance_ec2id_nat_a)
+    dupsworks.vpc.create_route_to_nat(rtb_a_pub, "8.8.4.4/32", instance_ec2id_nat_b)
+    dupsworks.vpc.create_route_to_nat(rtb_b_pub, "8.8.8.8/32", instance_ec2id_nat_a)
 
 
     # create and set Custom Json

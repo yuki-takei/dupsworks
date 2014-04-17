@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import boto.ec2
+import boto.exception
 from boto.vpc import VPCConnection
 
 import dupsworks.ec2
@@ -63,4 +64,26 @@ def setup_internet_gateway(rtbs, name=""):
         conn.create_route(rtb.id, "0.0.0.0/0", gateway_id=igw.id)
 
 
+def create_coute_to_nat(rtb, cidr, nat_id):
+    global conn
+    
+    print("creating route to NAT... (this might take several minutes)")
+
+    timeout = time.time() + ctx.cfg_o["vpc_timeout_create_route_to_nat"]	# now + several seconds later
+
+    ec2id = None
+    while True:
+        # check timeout
+        if time.time() > timeout:
+            break
+
+        try:
+            conn.create_route(rfb, cidr, nat_id)
+        except boto.exception.EC2ResponseError as e:
+            print "[WARN] " + e.message + " will retry after 1 sec..."
+        else
+            break
+
+        # sleep 1 second
+        time.sleep(1)
 
