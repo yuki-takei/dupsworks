@@ -37,7 +37,7 @@ def check_security_groups_created():
     timeout = time.time() + span
 
     # get security groups name list like ["AWS-OpsWorks-Custom-Server", "AWS-OpsWorks-Default-Server"]
-    necessary_names = cfg["OpsWorks"]["necessary_security_groups"]
+    necessary_names = cfg["OpsWorks"]["necessary_security_groups"].split(',')
 
     is_valid = False
     while True:

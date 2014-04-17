@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import time
+
 import boto.ec2
 import boto.exception
 from boto.vpc import VPCConnection
@@ -64,7 +66,7 @@ def setup_internet_gateway(rtbs, name=""):
         conn.create_route(rtb.id, "0.0.0.0/0", gateway_id=igw.id)
 
 
-def create_coute_to_nat(rtb, cidr, nat_id):
+def create_route_to_nat(rtb, cidr, nat_id):
     global conn
     
     print("creating route to NAT... (this might take several minutes)")
