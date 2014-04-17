@@ -83,7 +83,7 @@ def create_coute_to_nat(rtb, cidr, nat_id):
             conn.create_route(rfb, cidr, nat_id)
         except boto.exception.EC2ResponseError as e:
             print "[WARN] " + e.message + " will retry after 1 sec..."
-        else
+        else:
             break
 
         # sleep 1 second
