@@ -79,15 +79,16 @@ def create_route_to_nat(rtb, cidr, nat_id):
     while True:
         # check timeout
         if time.time() > timeout:
+            print "[WARN] Timeout. Couldn't create route."
             break
 
         try:
-            conn.create_route(rtb, cidr, nat_id)
+            conn.create_route(rtb.id, cidr, instance_id=nat_id)
         except boto.exception.EC2ResponseError as e:
-            print "[WARN] " + e.message + " will retry after 1 sec..."
+            print "[WARN] " + e.message + " (will retry after 5 sec...)"
         else:
             break
 
-        # sleep 1 second
-        time.sleep(1)
+        # sleep 5 second
+        time.sleep(5)
 

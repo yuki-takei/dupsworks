@@ -33,8 +33,8 @@ def check_security_groups_created():
     global conn
 
     # now + several seconds
-    span = ctx.parser.getfloat("OptionalSettings", "ec2_timeout_check_sg")
-    timeout = time.time() + span
+    timeout_span = ctx.parser.getfloat("OptionalSettings", "ec2_timeout_check_sg")
+    timeout = time.time() + timeout_span
 
     # get security groups name list like ["AWS-OpsWorks-Custom-Server", "AWS-OpsWorks-Default-Server"]
     necessary_names = cfg["OpsWorks"]["necessary_security_groups"].split(',')
@@ -68,5 +68,5 @@ def check_security_groups_created():
             break
 
     if is_valid == False:
-        raise Exception("couldn't confirm necessary security groups while at least 20 seconds.")
+        raise Exception("Couldn't confirm necessary security groups while at least " + timeout_span + " seconds.")
 

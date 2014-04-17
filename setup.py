@@ -72,23 +72,23 @@ def main():
     subnet_a_pub = dupsworks.vpc.create_subnet(
         cfg_p["vpc_subnet_az1_public_cidr"],
         cfg_p["vpc_subnet_az1"],
-        cfg["VPC"]["vpc_subnet_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "public", "group": "AZ1"})
+        cfg["VPC"]["subnet_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "public", "group": "AZ1"})
     rtb_main = vpc_conn.get_all_route_tables(filters=(("vpc-id", vpc.id),))[0]  # get main route table
     
     subnet_a_pvt = dupsworks.vpc.create_subnet(
         cfg_p["vpc_subnet_az1_private_cidr"],
         cfg_p["vpc_subnet_az1"],
-        cfg["VPC"]["vpc_subnet_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "private", "group": "AZ1"})
+        cfg["VPC"]["subnet_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "private", "group": "AZ1"})
     
     subnet_b_pub = dupsworks.vpc.create_subnet(
         cfg_p["vpc_subnet_az2_public_cidr"],
         cfg_p["vpc_subnet_az2"],
-        cfg["VPC"]["vpc_subnet_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "public", "group": "AZ2"})
+        cfg["VPC"]["subnet_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "public", "group": "AZ2"})
     
     subnet_b_pvt = dupsworks.vpc.create_subnet(
         cfg_p["vpc_subnet_az2_private_cidr"],
         cfg_p["vpc_subnet_az2"],
-        cfg["VPC"]["vpc_subnet_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "private", "group": "AZ2"})
+        cfg["VPC"]["subnet_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "private", "group": "AZ2"})
     
     # get or create route tables
     rtb_a_pub = rtb_main
@@ -171,7 +171,7 @@ def main():
     ow_conn.start_instance(instance_opsid_nat_b)
 
     # sleep a few seconds
-    delay = ctx.parser.getfloat("OptionalSettings", "ops_instance_start_delay")
+    delay = ctx.parser.getfloat("OpsWorks", "instance_start_delay")
     time.sleep(delay)
     
     # retrieve EC2 IDs
