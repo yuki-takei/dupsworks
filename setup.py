@@ -237,7 +237,18 @@ def main():
     print("installed custom_json to Stack : " + json_str)
 
 
-
+    # set permissions
+    if "stack_permissions" in cfg_p:
+        # decode
+        permission_objs = json.loads(cfg_p["stack_permissions"])
+        
+        for obj in permission_objs:
+            iam_user_arn = obj["iam_user_arn"],
+            allow_ssh = None if ("allow_ssh" not in obj) else obj["allow_ssh"]
+            allow_sudo = None if ("allow_sudo" not in obj) else obj["allow_sudo"]
+            level = None if ("level" not in obj) else obj["level"]
+            
+            ow_conn.set_permission(stack_id, iam_user_arn, allow_ssh, allow_sudo, level)
 
 
     # TODO print summary messages
