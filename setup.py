@@ -48,8 +48,8 @@ def main():
 
 
     # create connections
-    ec2region = boto.ec2.get_region("ap-northeast-1")
-    ec2_conn = boto.ec2.connect_to_region("ap-northeast-1")
+    ec2region = boto.ec2.get_region(cfg_p["region"])
+    ec2_conn = boto.ec2.connect_to_region(cfg_p["region"])
     vpc_conn = boto.vpc.VPCConnection(region=ec2region)
     ow_conn = boto.opsworks.layer1.OpsWorksConnection()
     
@@ -93,14 +93,19 @@ def main():
     # get or create route tables
     rtb_a_pub = rtb_main
     vpc_conn.associate_route_table(rtb_a_pub.id, subnet_a_pub.id)		# set main route table
-    dupsworks.ec2.set_name(rtb_a_pub, "TestVPC public segment A")
+    dupsworks.ec2.set_name(rtb_a_pub,
+        cfg["VPC"]["rtb_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "public", "group": "AZ1"})
     
-    rtb_a_pvt = dupsworks.vpc.create_and_associate_route_table(subnet_a_pvt, "TestVPC private segment A")
-    rtb_b_pub = dupsworks.vpc.create_and_associate_route_table(subnet_b_pub, "TestVPC public segment B")
-    rtb_b_pvt = dupsworks.vpc.create_and_associate_route_table(subnet_b_pvt, "TestVPC private segment B")
+    rtb_a_pvt = dupsworks.vpc.create_and_associate_route_table(subnet_a_pvt
+        cfg["VPC"]["rtb_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "private", "group": "AZ1"})
+    rtb_b_pub = dupsworks.vpc.create_and_associate_route_table(subnet_b_pub
+        cfg["VPC"]["rtb_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "public", "group": "AZ2"})
+    rtb_b_pvt = dupsworks.vpc.create_and_associate_route_table(subnet_b_pvt
+        cfg["VPC"]["rtb_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "private", "group": "AZ2"})
     
     # set Internet Gateway
-    dupsworks.vpc.setup_internet_gateway([rtb_a_pub, rtb_b_pub], "TestVPC Internet Gateway")
+    dupsworks.vpc.setup_internet_gateway([rtb_a_pub, rtb_b_pub],
+        cfg["VPC"]["igw_name_template"] % {"vpc_name": cfg_p["vpc_name"]})
 
     print("VPC has been created : " + vpc.id)
 
@@ -108,15 +113,15 @@ def main():
 
 
     # create a Stack
-    result = ow_conn.create_stack('Test', 'ap-northeast-1',
-        'arn:aws:iam::259692501178:role/aws-opsworks-service-role',
-        'arn:aws:iam::259692501178:instance-profile/aws-opsworks-ec2-role',
+    result = ow_conn.create_stack(cfg_p["stack_name"], cfg_p["region"],
+        cfg_p["stack_service_role_arn"], cfg_p["stack_default_instance_profile_arn"],
         vpc.id, default_subnet_id=subnet_a_pvt.id,
-        default_root_device_type="ebs",
+        default_os = cfg_o["stack_default_os"],
+        default_root_device_type=cfg_o["stack_root_device_type"],
         use_custom_cookbooks=True,
         custom_cookbooks_source={
             "Type": "git",
-            "Url": "https://github.com/yuki-takei/dupsworks-tmplate-cc.git"
+            "Url": cfg["OpsWorks"]["custom_cookbooks_giturl"]
         })
     stack_id = result["StackId"]
 
@@ -133,22 +138,39 @@ def main():
 
 
     # create layers
-    result = ow_conn.create_layer(stack_id, 'custom', 'Admin Server', 'admin', auto_assign_elastic_ips=True, custom_recipes={"Setup": ["timezone"]})
+    result = ow_conn.create_layer(stack_id, 'custom', 'Admin Server', 'admin',
+        auto_assign_elastic_ips=True, custom_recipes={"Setup": ["timezone"]},
+        package=cfg["OpsWorks"]["packages_for_admin_layer"].split("'"))
     layer_id_admin = result["LayerId"]
     print("OpsWorks Layer 'Admin Server' has been created : " + layer_id_admin)
-    result = ow_conn.create_layer(stack_id, 'custom', 'NAT Server', 'nat', auto_assign_public_ips=True, custom_recipes={"Setup": ["timezone", "vpcnat::disable-source-dest-check", "vpcnat::setup-heartbeat-script"]})
+    
+    result = ow_conn.create_layer(stack_id, 'custom', 'NAT Server', 'nat',
+        auto_assign_public_ips=True,
+        custom_recipes={
+            "Setup": [
+                "timezone",
+                "vpcnat::disable-source-dest-check",
+                "vpcnat::setup-heartbeat-script"
+            ]},
+        package=cfg["OpsWorks"]["packages_for_nat_layer"].split("'"))
     layer_id_nat = result["LayerId"]
     print("OpsWorks Layer 'NAT Server' has been created : " + layer_id_nat)
 
     # create an admin instance
-    result = ow_conn.create_instance(stack_id, [layer_id_admin], 't1.micro', subnet_id=subnet_a_pub.id)
+    os_admin = cfg_o["stack_default_os"]
+    if "instance_type_admin" in cfg["OpsWorks"]
+        os = cfg["OpsWorks"]["instance_type_admin"]
+    result = ow_conn.create_instance(stack_id, [layer_id_admin], os=os_admin, cfg_o["instance_type_admin"], subnet_id=subnet_a_pub.id)
     instance_opsid_admin = result["InstanceId"]
     print("1 admin instance has been created : " + instance_opsid_admin)
 
     # create nat instances
-    result = ow_conn.create_instance(stack_id, [layer_id_nat], 't1.micro', subnet_id=subnet_a_pub.id)
+    os_nat = cfg_o["stack_default_os"]
+    if "instance_type_nat" in cfg["OpsWorks"]
+        os = cfg["OpsWorks"]["instance_type_nat"]
+    result = ow_conn.create_instance(stack_id, [layer_id_nat], os=os_nat, cfg_o["instance_type_nat"], subnet_id=subnet_a_pub.id)
     instance_opsid_nat_a = result["InstanceId"]
-    result = ow_conn.create_instance(stack_id, [layer_id_nat], 't1.micro', subnet_id=subnet_b_pub.id)
+    result = ow_conn.create_instance(stack_id, [layer_id_nat], os=os_nat, cfg_o["instance_type_nat"], subnet_id=subnet_b_pub.id)
     instance_opsid_nat_b = result["InstanceId"]
     print("2 nat instances has been created : " + instance_opsid_nat_a + ", " + instance_opsid_nat_b)
 
@@ -182,26 +204,26 @@ def main():
 
     # create route for private segments
     dupsworks.vpc.create_route_to_nat(rtb_a_pvt, "0.0.0.0/0", instance_ec2id_nat_a)
-    dupsworks.vpc.create_route_to_nat(rtb_b_pvt, "0.0.0.0/0",instance_ec2id_nat_b)
+    dupsworks.vpc.create_route_to_nat(rtb_b_pvt, "0.0.0.0/0", instance_ec2id_nat_b)
     # create route for heartbeat checking
-    dupsworks.vpc.create_route_to_nat(rtb_a_pub, "8.8.4.4/32", instance_ec2id_nat_b)
-    dupsworks.vpc.create_route_to_nat(rtb_b_pub, "8.8.8.8/32", instance_ec2id_nat_a)
+    dupsworks.vpc.create_route_to_nat(rtb_a_pub, cfg["VPC"]["target_via_checking_nat_az1"], instance_ec2id_nat_b)
+    dupsworks.vpc.create_route_to_nat(rtb_b_pub, cfg["VPC"]["target_via_checking_nat_az2"], instance_ec2id_nat_a)
 
 
     # create and set Custom Json
     json_obj = {
         "vpcnat": {
             "az": {
-                "ap-northeast-1a": {
-                    "target_via_checking_nat": "8.8.4.4",
-                    "target_via_inetgw": "google.co.jp",
+                cfg_p["vpc_subnet_az1"]: {
+                    "target_via_checking_nat": cfg["VPC"]["target_via_checking_nat_az1"],
+                    "target_via_inetgw": cfg["VPC"]["target_via_inetgw_az1"],
                     "opposit_primary_nat_id": instance_ec2id_nat_b,
                     "opposit_rtb": rtb_b_pvt.id,
                     "enabled": 1
                 },
-                "ap-northeast-1c": {
-                    "target_via_checking_nat": "8.8.8.8",
-                    "target_via_inetgw": "google.co.jp",
+                cfg_p["vpc_subnet_az1"]: {
+                    "target_via_checking_nat": cfg["VPC"]["target_via_checking_nat_az2"],
+                    "target_via_inetgw": cfg["VPC"]["target_via_inetgw_az2"],
                     "opposit_primary_nat_id": instance_ec2id_nat_a,
                     "opposit_rtb": rtb_a_pvt.id,
                     "enabled": 1
