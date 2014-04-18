@@ -218,7 +218,7 @@ def main():
                     "opposit_rtb": rtb_b_pvt.id,
                     "enabled": 1
                 },
-                cfg_p["vpc_subnet_az1"]: {
+                cfg_p["vpc_subnet_az2"]: {
                     "target_via_checking_nat": cfg["VPC"]["target_via_checking_nat_az2"],
                     "target_via_inetgw": cfg["VPC"]["target_via_inetgw_az2"],
                     "opposit_primary_nat_id": instance_ec2id_nat_a,
