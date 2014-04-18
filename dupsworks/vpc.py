@@ -72,7 +72,7 @@ def create_route_to_nat(rtb, cidr, nat_id):
     print("creating route to NAT... (this might take several minutes)")
 
     # now + several seconds later
-    span = ctx.parser.getfloat("OptionalSettings", "vpc_timeout_create_route_to_nat")
+    span = cfg_o.as_float("vpc_timeout_create_route_to_nat")
     timeout = time.time() + span
 
     ec2id = None

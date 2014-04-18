@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import os
-from ConfigParser import SafeConfigParser
+from configobj import ConfigObj
 
 import json
 import time
@@ -38,10 +38,9 @@ def main():
 
     # create Context instance
     filepath = os.path.join(os.path.dirname(__file__), "setup.cfg")
-    parser = SafeConfigParser()
-    parser.read(filepath)
+    cfg = ConfigObj(filepath)
 
-    ctx = Context(parser)
+    ctx = Context(cfg)
     cfg = ctx.cfg
     cfg_p = ctx.cfg_p
     cfg_o = ctx.cfg_o
@@ -190,7 +189,7 @@ def main():
     ow_conn.start_instance(instance_opsid_nat_b)
 
     # sleep a few seconds
-    delay = ctx.parser.getfloat("OpsWorks", "instance_start_delay")
+    delay = cfg["OpsWorks"].as_float("instance_start_delay")
     time.sleep(delay)
     
     # retrieve EC2 IDs
@@ -236,14 +235,12 @@ def main():
 
     # set permissions
     if "stack_permissions" in cfg_p:
-        # decode
-        permission_objs = json.loads(cfg_p["stack_permissions"])
         
-        for obj in permission_objs:
-            iam_user_arn = obj["iam_user_arn"]
-            allow_ssh = None if ("allow_ssh" not in obj) else obj["allow_ssh"]
-            allow_sudo = None if ("allow_sudo" not in obj) else obj["allow_sudo"]
-            level = None if ("level" not in obj) else obj["level"]
+        for val in cfg_p["stack_permissions"].values():
+            iam_user_arn = val["iam_user_arn"]
+            allow_ssh = None if ("allow_ssh" not in val) else val.as_bool["allow_ssh"]
+            allow_sudo = None if ("allow_sudo" not in val) else val.as_bool["allow_sudo"]
+            level = None if ("level" not in val) else val["level"]
             
             ow_conn.set_permission(stack_id, iam_user_arn, allow_ssh, allow_sudo, level)
 

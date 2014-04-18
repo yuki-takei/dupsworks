@@ -33,7 +33,7 @@ def check_security_groups_created():
     global conn
 
     # now + several seconds
-    timeout_span = ctx.parser.getfloat("OptionalSettings", "ec2_timeout_check_sg")
+    timeout_span = cfg_o.as_float("ec2_timeout_check_sg")
     timeout = time.time() + timeout_span
 
     # get security groups name list like ["AWS-OpsWorks-Custom-Server", "AWS-OpsWorks-Default-Server"]

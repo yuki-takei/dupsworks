@@ -4,15 +4,13 @@
 
 class Context:
 
-    parser = None
     cfg = None
     cfg_p = None
     cfg_o = None
 
     vpc = None
 
-    def __init__(self, parser):
-        self.parser = parser
-        self.cfg = parser._sections
-        self.cfg_p = self.cfg["PersonalSettings"]
-        self.cfg_o = self.cfg["OptionalSettings"]
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.cfg_p = cfg["PersonalSettings"]
+        self.cfg_o = cfg["OptionalSettings"]
