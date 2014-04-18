@@ -96,11 +96,11 @@ def main():
     dupsworks.ec2.set_name(rtb_a_pub,
         cfg["VPC"]["rtb_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "public", "group": "AZ1"})
     
-    rtb_a_pvt = dupsworks.vpc.create_and_associate_route_table(subnet_a_pvt
+    rtb_a_pvt = dupsworks.vpc.create_and_associate_route_table(subnet_a_pvt,
         cfg["VPC"]["rtb_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "private", "group": "AZ1"})
-    rtb_b_pub = dupsworks.vpc.create_and_associate_route_table(subnet_b_pub
+    rtb_b_pub = dupsworks.vpc.create_and_associate_route_table(subnet_b_pub,
         cfg["VPC"]["rtb_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "public", "group": "AZ2"})
-    rtb_b_pvt = dupsworks.vpc.create_and_associate_route_table(subnet_b_pvt
+    rtb_b_pvt = dupsworks.vpc.create_and_associate_route_table(subnet_b_pvt,
         cfg["VPC"]["rtb_name_template"] % {"vpc_name": cfg_p["vpc_name"], "layer": "private", "group": "AZ2"})
     
     # set Internet Gateway
@@ -116,7 +116,7 @@ def main():
     result = ow_conn.create_stack(cfg_p["stack_name"], cfg_p["region"],
         cfg_p["stack_service_role_arn"], cfg_p["stack_default_instance_profile_arn"],
         vpc.id, default_subnet_id=subnet_a_pvt.id,
-        default_os = cfg_o["stack_default_os"],
+        default_os = cfg["OpsWorks"]["stack_default_os"],
         default_root_device_type=cfg_o["stack_root_device_type"],
         use_custom_cookbooks=True,
         custom_cookbooks_source={
@@ -140,7 +140,7 @@ def main():
     # create layers
     result = ow_conn.create_layer(stack_id, 'custom', 'Admin Server', 'admin',
         auto_assign_elastic_ips=True, custom_recipes={"Setup": ["timezone"]},
-        package=cfg["OpsWorks"]["packages_for_admin_layer"].split("'"))
+        packages=cfg["OpsWorks"]["packages_for_admin_layer"].split(","))
     layer_id_admin = result["LayerId"]
     print("OpsWorks Layer 'Admin Server' has been created : " + layer_id_admin)
     
@@ -152,25 +152,22 @@ def main():
                 "vpcnat::disable-source-dest-check",
                 "vpcnat::setup-heartbeat-script"
             ]},
-        package=cfg["OpsWorks"]["packages_for_nat_layer"].split("'"))
+        packages=cfg["OpsWorks"]["packages_for_nat_layer"].split(","))
     layer_id_nat = result["LayerId"]
     print("OpsWorks Layer 'NAT Server' has been created : " + layer_id_nat)
 
     # create an admin instance
-    os_admin = cfg_o["stack_default_os"]
-    if "instance_type_admin" in cfg["OpsWorks"]
-        os = cfg["OpsWorks"]["instance_type_admin"]
-    result = ow_conn.create_instance(stack_id, [layer_id_admin], os=os_admin, cfg_o["instance_type_admin"], subnet_id=subnet_a_pub.id)
+    os_admin = cfg["OpsWorks"]["instance_os_admin"]
+    result = ow_conn.create_instance(stack_id, [layer_id_admin], cfg_o["instance_type_admin"], os=os_admin, subnet_id=subnet_a_pub.id)
     instance_opsid_admin = result["InstanceId"]
     print("1 admin instance has been created : " + instance_opsid_admin)
 
     # create nat instances
-    os_nat = cfg_o["stack_default_os"]
-    if "instance_type_nat" in cfg["OpsWorks"]
-        os = cfg["OpsWorks"]["instance_type_nat"]
-    result = ow_conn.create_instance(stack_id, [layer_id_nat], os=os_nat, cfg_o["instance_type_nat"], subnet_id=subnet_a_pub.id)
+    instance_type = cfg_o["instance_type_nat"]
+    os_nat = cfg["OpsWorks"]["instance_os_nat"]
+    result = ow_conn.create_instance(stack_id, [layer_id_nat], instance_type, os=os_nat, subnet_id=subnet_a_pub.id)
     instance_opsid_nat_a = result["InstanceId"]
-    result = ow_conn.create_instance(stack_id, [layer_id_nat], os=os_nat, cfg_o["instance_type_nat"], subnet_id=subnet_b_pub.id)
+    result = ow_conn.create_instance(stack_id, [layer_id_nat], instance_type, os=os_nat, subnet_id=subnet_b_pub.id)
     instance_opsid_nat_b = result["InstanceId"]
     print("2 nat instances has been created : " + instance_opsid_nat_a + ", " + instance_opsid_nat_b)
 
@@ -206,8 +203,8 @@ def main():
     dupsworks.vpc.create_route_to_nat(rtb_a_pvt, "0.0.0.0/0", instance_ec2id_nat_a)
     dupsworks.vpc.create_route_to_nat(rtb_b_pvt, "0.0.0.0/0", instance_ec2id_nat_b)
     # create route for heartbeat checking
-    dupsworks.vpc.create_route_to_nat(rtb_a_pub, cfg["VPC"]["target_via_checking_nat_az1"], instance_ec2id_nat_b)
-    dupsworks.vpc.create_route_to_nat(rtb_b_pub, cfg["VPC"]["target_via_checking_nat_az2"], instance_ec2id_nat_a)
+    dupsworks.vpc.create_route_to_nat(rtb_a_pub, cfg["VPC"]["target_via_checking_nat_az1"]+"/32", instance_ec2id_nat_b)
+    dupsworks.vpc.create_route_to_nat(rtb_b_pub, cfg["VPC"]["target_via_checking_nat_az2"]+"/32", instance_ec2id_nat_a)
 
 
     # create and set Custom Json
@@ -243,7 +240,7 @@ def main():
         permission_objs = json.loads(cfg_p["stack_permissions"])
         
         for obj in permission_objs:
-            iam_user_arn = obj["iam_user_arn"],
+            iam_user_arn = obj["iam_user_arn"]
             allow_ssh = None if ("allow_ssh" not in obj) else obj["allow_ssh"]
             allow_sudo = None if ("allow_sudo" not in obj) else obj["allow_sudo"]
             level = None if ("level" not in obj) else obj["level"]
