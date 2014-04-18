@@ -80,6 +80,8 @@ def create_route_to_nat(rtb, cidr, nat_id):
         # check timeout
         if time.time() > timeout:
             print "[WARN] Timeout. Couldn't create route."
+            print "Please create route at your own as follows : "
+            print "  >> aws ec2 create-route --route-table-id %s --destination-cidr-block %s --instance-id %s" % (rtb.id, cidr, nat_id)
             break
 
         try:

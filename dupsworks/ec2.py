@@ -37,7 +37,7 @@ def check_security_groups_created():
     timeout = time.time() + timeout_span
 
     # get security groups name list like ["AWS-OpsWorks-Custom-Server", "AWS-OpsWorks-Default-Server"]
-    necessary_names = cfg["OpsWorks"]["necessary_security_groups"].split(',')
+    necessary_names = cfg["OpsWorks"]["necessary_security_groups"]
 
     is_valid = False
     while True:
@@ -52,13 +52,15 @@ def check_security_groups_created():
         for sg in sgs:
             sg_names.append(sg.name)
 
-        # set True temporary
-        is_valid = True
         # check whethere necessary security groups are contained
+        count = 0
         for name in necessary_names:
-            if name not in sg_names:
-                is_valid = False
+            if name in sg_names:
+                count += 1
+            else:
                 break
+
+        is_valid = (count == len(necessary_names))
 
         # continue or break
         if is_valid == False:
@@ -69,4 +71,5 @@ def check_security_groups_created():
 
     if is_valid == False:
         raise Exception("Couldn't confirm necessary security groups while at least " + timeout_span + " seconds.")
-
+    else:
+        print("Security Groups '%s' found." % necessary_names)

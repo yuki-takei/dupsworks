@@ -33,11 +33,12 @@ def get_ec2id_from_opsid(opsid):
     print("retrieving EC2 Instance ID... (this might take several minutes)")
 
     # now + several seconds later
-    span = ctg_o.as_float("ec2_timeout_retrieve_id")
+    span = cfg_o.as_float("ec2_timeout_retrieve_id")
     timeout = time.time() + span
 
     ec2id = None
     while True:
+
         # check timeout
         if time.time() > timeout:
             break
