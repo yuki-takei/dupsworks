@@ -149,8 +149,7 @@ def main():
         custom_recipes={
             "Setup": [
                 "timezone",
-                "vpcnat::disable-source-dest-check",
-                "vpcnat::setup-heartbeat-script"
+                "vpcnat"
             ]},
         packages=cfg["OpsWorks"].as_list("packages_for_nat_layer"))
     layer_id_nat = result["LayerId"]
