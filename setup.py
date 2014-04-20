@@ -220,6 +220,7 @@ def main():
     # create and set Custom Json
     json_obj = {
         "vpcnat": {
+            "ipmasq_src": cfg_p["vpc_cidr"],
             "az": {
                 cfg_p["vpc_subnet_az1"]: {
                     "target_via_checking_nat": cfg["VPC"]["target_via_checking_nat_az1"],
