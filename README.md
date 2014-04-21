@@ -9,7 +9,7 @@ Summary
 
 ### Application environments need High-Availability
 
-Amazon VPC and OpsWorks are amazing solution for publish applications.  
+Amazon VPC and OpsWorks are amazing solution to publish applications.  
 Suppose we are constructing such a structure:
 
 <table>
