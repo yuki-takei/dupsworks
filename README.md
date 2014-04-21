@@ -1,4 +1,4 @@
-Dupsworks
+DupsWorks
 =========
 
 Scripts which build an OpsWorks Stack with HA-NAT Layer
@@ -7,6 +7,73 @@ Scripts which build an OpsWorks Stack with HA-NAT Layer
 Summary
 --------
 
+### Application environments need High-Availability
+
+Amazon VPC and OpsWorks are amazing solution for publish applications.  
+Suppose we are constructing such a structure:
+
+<table>
+  <tr>
+    <td>
+      <img width="400px" style="max-width:100%;" alt="03_heartbeat.png" src="/docs/images/02_working_correctly.png" />
+    </td>
+  </tr>
+</table>
+
+that has **4 subnets**
+
+* public subnet 1
+* private subnet 1 (connectable to the Internet due to nat1)
+* public subnet 2
+* private subnet 2 (connectable to the Internet due to nat2)
+
+
+To avoid to enclose Single Point Of Failure, it is preffered to have such a mechanism.
+
+<table>
+  <tr>
+    <td>
+      <img width="400px" style="max-width:100%;" alt="03_heartbeat.png" src="/docs/images/03_heartbeat.png" />
+    </td>
+    <td>
+      <img width="400px" style="max-width:100%;" alt="04_nat1_failure.png" src="/docs/images/05_nat2_failure.png" />
+    </td>
+  </tr>
+  <tr>
+    <th>checking heartbeat each other</th>
+    <th>automatic failovering and recovering</th>
+  </tr>
+</table>
+
+But constructing as above is hard a little bit.
+
+
+### What does DupsWorks do?
+
+DupsWorks makes it easy to build a VPC sutructure as above, OpsWorks Stack, NAT Layer and instances, and install some scripts to NAT instances that provides High-Availability.
+
+All processes are below:
+
+1. create VPC
+1. create 4 subnets
+1. create an OpsWorks stack
+1. create OpsWorks layers
+  1. admin layer (for gateway instances)
+  1. nat layer
+1. set permissions (optional)
+2. create OpsWorks instances
+  1. 1 admin instance
+  1. 2 NAT instances
+1. start NAT instances
+1. configure route
+  1. public subnets -> internet gateway
+  1. private subnets -> nat instances
+  1. checking heartbeat route
+1. configure NAT instances
+  1. disable Source/dest. check.
+  1. set '1' to net.ipv4.ip_forward using sysctl
+  1. configure iptables and enable IP Masquerading
+1. install scripts(check heartbeat and failover) to NAT instances.
 
 
 Requirements
@@ -23,7 +90,7 @@ Usage
 ### Script Settings
 
 1. Copy ``settings.cfg.example`` to ``settings.cfg``.
-1. Edit params of ``[PersonalSettings]`` section.
+1. Edit params in ``[PersonalSettings]`` section.
 
 #### Example:
 
