@@ -15,7 +15,7 @@ Suppose we are constructing such a structure:
 <table>
   <tr>
     <td>
-      <img width="400px" style="max-width:100%;" alt="03_heartbeat.png" src="/docs/images/02_working_correctly.png" />
+      <img width="360px" style="max-width:100%;" alt="03_heartbeat.png" src="/docs/images/02_working_correctly.png" />
     </td>
   </tr>
 </table>
@@ -33,10 +33,10 @@ To avoid to enclose Single Point Of Failure, it is preffered to have such a mech
 <table>
   <tr>
     <td>
-      <img width="400px" style="max-width:100%;" alt="03_heartbeat.png" src="/docs/images/03_heartbeat.png" />
+      <img width="360px" style="max-width:100%;" alt="03_heartbeat.png" src="/docs/images/03_heartbeat.png" />
     </td>
     <td>
-      <img width="400px" style="max-width:100%;" alt="04_nat1_failure.png" src="/docs/images/05_nat2_failure.png" />
+      <img width="360px" style="max-width:100%;" alt="04_nat1_failure.png" src="/docs/images/05_nat2_failure.png" />
     </td>
   </tr>
   <tr>
