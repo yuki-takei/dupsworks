@@ -37,7 +37,7 @@ from dupsworks.context import Context
 def main():
 
     # create Context instance
-    filepath = os.path.join(os.path.dirname(__file__), "setup.cfg")
+    filepath = os.path.join(os.path.dirname(__file__), "settings.cfg")
     cfg = ConfigObj(filepath, interpolation=False)
 
     ctx = Context(cfg)
