@@ -69,7 +69,7 @@ def setup_internet_gateway(rtbs, name=""):
 def create_route_to_nat(rtb, cidr, nat_id):
     global conn
     
-    print("creating route ... [%s, %s -> %s] (this might take several minutes)" % rtb.id : cidr, nat_id)
+    print("creating route ... [%s : %s -> %s] (this might take several minutes)" % (rtb.id, cidr, nat_id))
 
     # now + several seconds later
     span = cfg_o.as_float("vpc_timeout_create_route_to_nat")
