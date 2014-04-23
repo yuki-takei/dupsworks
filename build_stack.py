@@ -121,7 +121,8 @@ def main():
         use_custom_cookbooks=True,
         custom_cookbooks_source={
             "Type": "git",
-            "Url": cfg["OpsWorks"]["custom_cookbooks_giturl"]
+            "Url": cfg["OpsWorks"]["custom_cookbooks_giturl"],
+            "Revision": cfg["OpsWorks"]["custom_cookbooks_gitrev"]
         })
     stack_id = result["StackId"]
 

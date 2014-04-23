@@ -83,7 +83,9 @@ target_via_inetgw_az2 = google.co.jp
 stack_default_os = Custom
 instance_start_delay = 3.0
 necessary_security_groups = AWS-OpsWorks-Custom-Server,AWS-OpsWorks-Default-Server
-custom_cookbooks_giturl = https://github.com/yuki-takei/dupsworks-tmplate-cc.git
+custom_cookbooks_giturl = https://github.com/yuki-takei/dupsworks-template-cc.git
+custom_cookbooks_gitrev = 16f7da08fce5f0a475f2d9840604765c7dec551d
+
 packages_for_admin_layer = traceroute
 packages_for_nat_layer = traceroute,jq
 instance_os_admin = Ubuntu 12.04 LTS
