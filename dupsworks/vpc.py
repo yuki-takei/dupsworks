@@ -68,7 +68,7 @@ def setup_internet_gateway(rtbs, name=""):
 
 def create_route_to_nat(rtb, cidr, nat_id):
     global conn
-    
+
     print("creating route ... [%s : %s -> %s] (this might take several minutes)" % (rtb.id, cidr, nat_id))
 
     # now + several seconds later
@@ -79,15 +79,15 @@ def create_route_to_nat(rtb, cidr, nat_id):
     while True:
         # check timeout
         if time.time() > timeout:
-            print "[WARN] Timeout. Couldn't create route."
-            print "Please create route at your own as follows : "
-            print "  >> aws ec2 create-route --route-table-id %s --destination-cidr-block %s --instance-id %s" % (rtb.id, cidr, nat_id)
+            print("[WARN] Timeout. Couldn't create route.")
+            print("Please create route at your own as follows : ")
+            print("  >> aws ec2 create-route --route-table-id %s --destination-cidr-block %s --instance-id %s" % (rtb.id, cidr, nat_id))
             break
 
         try:
             conn.create_route(rtb.id, cidr, instance_id=nat_id)
         except boto.exception.EC2ResponseError as e:
-            print "[WARN] " + e.message + " (will retry after 5 sec...)"
+            print("[WARN] " + e.message + " (will retry after 5 sec...)")
         else:
             break
 

@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2014. WESEEK, Inc. All Rights Reserved.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,7 +51,7 @@ def main():
     ec2_conn = boto.ec2.connect_to_region(cfg_p["region"])
     vpc_conn = boto.vpc.VPCConnection(region=ec2region)
     ow_conn = boto.opsworks.layer1.OpsWorksConnection()
-    
+
     # init modules
     dupsworks.ec2.init(ctx, ec2_conn)
     dupsworks.vpc.init(ctx, vpc_conn)
@@ -74,35 +74,35 @@ def main():
         cfg_p["vpc_subnet_az1"],
         cfg["VPC"]["subnet_name_template"] % {"vpc_name": vpc_name, "layer": "public", "group": "AZ1"})
     rtb_main = vpc_conn.get_all_route_tables(filters=(("vpc-id", vpc.id),))[0]  # get main route table
-    
+
     subnet_a_pvt = dupsworks.vpc.create_subnet(
         cfg_p["vpc_subnet_az1_private_cidr"],
         cfg_p["vpc_subnet_az1"],
         cfg["VPC"]["subnet_name_template"] % {"vpc_name": vpc_name, "layer": "private", "group": "AZ1"})
-    
+
     subnet_b_pub = dupsworks.vpc.create_subnet(
         cfg_p["vpc_subnet_az2_public_cidr"],
         cfg_p["vpc_subnet_az2"],
         cfg["VPC"]["subnet_name_template"] % {"vpc_name": vpc_name, "layer": "public", "group": "AZ2"})
-    
+
     subnet_b_pvt = dupsworks.vpc.create_subnet(
         cfg_p["vpc_subnet_az2_private_cidr"],
         cfg_p["vpc_subnet_az2"],
         cfg["VPC"]["subnet_name_template"] % {"vpc_name": vpc_name, "layer": "private", "group": "AZ2"})
-    
+
     # get or create route tables
     rtb_a_pub = rtb_main
     vpc_conn.associate_route_table(rtb_a_pub.id, subnet_a_pub.id)		# set main route table
     dupsworks.ec2.set_name(rtb_a_pub,
         cfg["VPC"]["rtb_name_template"] % {"vpc_name": vpc_name, "layer": "public", "group": "AZ1"})
-    
+
     rtb_a_pvt = dupsworks.vpc.create_and_associate_route_table(subnet_a_pvt,
         cfg["VPC"]["rtb_name_template"] % {"vpc_name": vpc_name, "layer": "private", "group": "AZ1"})
     rtb_b_pub = dupsworks.vpc.create_and_associate_route_table(subnet_b_pub,
         cfg["VPC"]["rtb_name_template"] % {"vpc_name": vpc_name, "layer": "public", "group": "AZ2"})
     rtb_b_pvt = dupsworks.vpc.create_and_associate_route_table(subnet_b_pvt,
         cfg["VPC"]["rtb_name_template"] % {"vpc_name": vpc_name, "layer": "private", "group": "AZ2"})
-    
+
     # set Internet Gateway
     dupsworks.vpc.setup_internet_gateway([rtb_a_pub, rtb_b_pub],
         cfg["VPC"]["igw_name_template"] % {"vpc_name": vpc_name})
@@ -126,14 +126,14 @@ def main():
         })
     stack_id = result["StackId"]
 
-    print "OpsWorks Stack has been created : " + stack_id
+    print("OpsWorks Stack has been created : " + stack_id)
 
     # Chef settings
     # !! using awscli because boto(at least 2.27.0) doesn't support the "chef-configuration" argument !!
     subprocess.check_output("aws --region us-east-1 \
         opsworks update-stack --stack-id %s \
             --configuration-manager Name=Chef,Version=11.10 \
-            --chef-configuration ManageBerkshelf=true,BerkshelfVersion=2.0.14" % stack_id,
+            --chef-configuration ManageBerkshelf=true,BerkshelfVersion=2.0.18" % stack_id,
         shell=True)
 
 
@@ -144,7 +144,7 @@ def main():
         packages=cfg["OpsWorks"].as_list("packages_for_admin_layer"))
     layer_id_admin = result["LayerId"]
     print("OpsWorks Layer 'Admin Server' has been created : " + layer_id_admin)
-    
+
     result = ow_conn.create_layer(stack_id, 'custom', 'NAT Server', 'nat',
         auto_assign_public_ips=True,
         custom_recipes={
@@ -160,13 +160,13 @@ def main():
 
     # set permissions
     if "stack_permissions" in cfg_p:
-        
+
         for key, val in cfg_p["stack_permissions"].items():
             iam_user_arn = val["iam_user_arn"]
             allow_ssh = None if ("allow_ssh" not in val) else val.as_bool("allow_ssh")
             allow_sudo = None if ("allow_sudo" not in val) else val.as_bool("allow_sudo")
             level = None if ("level" not in val) else val["level"]
-            
+
             ow_conn.set_permission(stack_id, iam_user_arn, allow_ssh, allow_sudo, level)
 
             print("Set permission for : " + iam_user_arn)
@@ -196,21 +196,21 @@ def main():
     try:
         dupsworks.ec2.check_security_groups_created()
     except Exception as e:
-        print "[WARN] " + e.message
+        print("[WARN] " + e.message)
 
 
 
     # start nat instanceses
     print("starting instance : " + instance_opsid_nat_a)
     ow_conn.start_instance(instance_opsid_nat_a)
-    
+
     print("starting instance : " + instance_opsid_nat_b)
     ow_conn.start_instance(instance_opsid_nat_b)
 
     # sleep a few seconds
     delay = cfg["OpsWorks"].as_float("instance_start_delay")
     time.sleep(delay)
-    
+
     # retrieve EC2 IDs
     instance_ec2id_nat_a = dupsworks.opsworks.get_ec2id_from_opsid(instance_opsid_nat_a)
     instance_ec2id_nat_b = dupsworks.opsworks.get_ec2id_from_opsid(instance_opsid_nat_b)
