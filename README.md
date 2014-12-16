@@ -79,7 +79,7 @@ All processes are below:
 Requirements
 -------------
 
-Dupsworks depends on Python 2.7 and some packages. You can install them using pip:
+Dupsworks depends on Python 3 and some packages. You can install them using pip:
 
     pip install -r requirements.txt
 
@@ -117,9 +117,25 @@ stack_default_instance_profile_arn = arn:aws:iam::111111111111:instance-profile/
 
 ```
 
+#### Add permissions to "stack_default_instance_profile"
+
+An OpsWorks Stack requires 2 ARNs. "Default IAM Instance Profile" is one of them.
+
+When Dupsworks creates an OpsWorks Stack, the value you specified as "stack_default_instance_profile_arn" in settings.cfg will be set to "Default IAM Instance Profile".
+
+You must add following permissions to the IAM Role:
+
+    * allow to read EC2 information
+    * allow modifing EC2 instance attributes
+    * allow replacing route in VPC
+
+in order to execute recipes of [weseek/vpcnat](https://github.com/weseek/chef-vpcnat).
+
+See the [Security and Permissions](http://docs.aws.amazon.com/opsworks/latest/userguide/workingsecurity.html) page for more information.
+
 ### Security Credentials
 
-Dupsworks use [boto](http://aws.amazon.com/sdkforpython/) and [awscli](http://aws.amazon.com/jp/cli/).
+Dupsworks uses [boto](http://aws.amazon.com/sdkforpython/) and [awscli](http://aws.amazon.com/jp/cli/).
 
 You need to set your AWS security credentials before the script is able to
 connect to AWS. The SDK will automatically pick up credentials in environment
@@ -128,7 +144,7 @@ variables:
     export AWS_ACCESS_KEY_ID="Your AWS Access Key ID"
     export AWS_SECRET_ACCESS_KEY="Your AWS Secret Access Key"
 
-See the [Security Credentials](http://aws.amazon.com/security-credentials) page
+See the [AWS Security Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html) page
 for more information on getting your keys.
 
 ### Execute
@@ -152,7 +168,7 @@ Copyright 2014 WESEEK, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");  
 you may not use this file except in compliance with the License.  
-You may obtain a copy of the License at  
+You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
@@ -160,5 +176,5 @@ Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,  
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
 See the License for the specific language governing permissions and  
-limitations under the License.  
+limitations under the License.
 
