@@ -219,6 +219,10 @@ def main():
 
     # create and set Custom Json
     json_obj = {
+        "awscli": {
+            "region": cfg_p["region"],
+            "version": cfg["awscli"]["version"]
+        },
         "vpcnat": {
             "ipmasq_src": cfg_p["vpc_cidr"],
             "az": {
